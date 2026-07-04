@@ -2,7 +2,7 @@
 
 > Atur ulang resolusi gambar lokal, dari **0.25×** sampai **4×**, tanpa kehilangan detail.
 
-RESOLV adalah aplikasi web berbasis Flask yang memungkinkan kamu melakukan **upscaling** gambar menggunakan model AI **Real-ESRGAN (ncnn-vulkan)** dan **downscaling** menggunakan interpolasi presisi tinggi — semua berjalan **100% lokal di mesin Anda**, tanpa server eksternal, tanpa upload ke cloud.
+RESOLV adalah aplikasi web berbasis Flask yang memungkinkan anda melakukan **upscaling** gambar menggunakan model AI **Real-ESRGAN (ncnn-vulkan)** dan **downscaling** menggunakan interpolasi presisi tinggi — semua berjalan **100% lokal di mesin Anda**, tanpa server eksternal, tanpa upload ke cloud.
 
 Dibuat untuk **UAS Grafika Komputer** — tema _Teknologi Grafika Komputer pada Aplikasi Industri_ (image super-resolution / pemrosesan citra digital).
 
