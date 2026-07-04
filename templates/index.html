@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RESOLV — Image Resolution Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#15171A;
+    --panel:#1C1F24;
+    --panel-2:#23262C;
+    --line:#33373E;
+    --text:#EDEBE3;
+    --text-dim:#8B8F98;
+    --amber:#FF8A1E;
+    --amber-dim:#7A4A1E;
+    --phosphor:#4ADE80;
+    --blue:#5B8DEF;
+    --blue-dim:#2A3A5C;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .noise{
+    position:fixed;inset:0;pointer-events:none;opacity:.025;z-index:1;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 40px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(21,23,26,.92);backdrop-filter:blur(6px);z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;letter-spacing:.04em;font-size:18px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--phosphor);box-shadow:0 0 8px var(--phosphor);}
+  .brand small{color:var(--text-dim);font-weight:400;font-size:12px;letter-spacing:.08em;margin-left:6px;}
+  .topbar nav{display:flex;gap:28px;font-size:13px;color:var(--text-dim);}
+  .topbar nav a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
+  .topbar nav a:hover{color:var(--text);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:72px 40px 56px;max-width:1180px;margin:0 auto;
+    display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:end;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--amber);
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;
+  }
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--amber);}
+  h1{
+    font-size:54px;line-height:1.05;font-weight:800;letter-spacing:-.01em;
+    max-width:560px;
+  }
+  h1 em{
+    font-style:normal;color:var(--amber);
+  }
+  .hero p.sub{margin-top:18px;color:var(--text-dim);font-size:16px;max-width:480px;}
+  .hero-meta{
+    font-family:var(--mono);font-size:13px;color:var(--text-dim);
+    display:flex;flex-direction:column;gap:10px;border-left:1px solid var(--line);padding-left:24px;
+  }
+  .hero-meta .row{display:flex;justify-content:space-between;gap:16px;}
+  .hero-meta .row span:last-child{color:var(--text);}
+
+  /* ---------- LAB PANEL (main tool) ---------- */
+  .lab{
+    max-width:1180px;margin:0 auto 100px;padding:0 40px;
+  }
+  .lab-frame{
+    border:1px solid var(--line);border-radius:6px;background:var(--panel);
+    display:grid;grid-template-columns:1.3fr 1fr;
+    overflow:hidden;
+  }
+  @media (max-width:880px){
+    .lab-frame{grid-template-columns:1fr;}
+  }
+
+  /* viewport (left) */
+  .viewport{
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+  }
+  .viewport-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.06em;
+  }
+  .viewport-bar .led{display:flex;align-items:center;gap:6px;}
+  .viewport-bar .led .b{width:6px;height:6px;border-radius:50%;background:var(--line);}
+  .viewport-bar .led.active .b{background:var(--phosphor);box-shadow:0 0 6px var(--phosphor);}
+
+  .drop-zone{
+    flex:1;min-height:380px;display:flex;align-items:center;justify-content:center;
+    margin:18px;border:1.5px dashed var(--line);border-radius:4px;
+    background:repeating-linear-gradient(45deg, transparent, transparent 9px, rgba(255,255,255,.012) 9px, rgba(255,255,255,.012) 10px);
+    cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden;
+  }
+  .drop-zone.drag{border-color:var(--amber);background:rgba(255,138,30,.04);}
+  .drop-zone img{max-width:100%;max-height:420px;object-fit:contain;}
+  .drop-zone .placeholder{
+    text-align:center;color:var(--text-dim);font-size:13px;padding:20px;
+  }
+  .drop-zone .placeholder .icon{font-size:28px;margin-bottom:10px;display:block;color:var(--line);}
+  .drop-zone .placeholder strong{color:var(--text);display:block;margin-bottom:6px;font-size:14px;}
+  .drop-zone input[type=file]{display:none;}
+
+  .compare-tag{
+    position:absolute;top:10px;left:10px;font-family:var(--mono);font-size:10px;
+    background:rgba(0,0,0,.55);padding:3px 8px;border-radius:3px;letter-spacing:.05em;color:var(--text-dim);
+  }
+
+  /* controls (right) */
+  .controls{display:flex;flex-direction:column;padding:22px 24px;gap:22px;}
+  .ctrl-group label{
+    display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;
+  }
+
+  /* scale readout */
+  .scale-readout{
+    display:flex;align-items:baseline;gap:8px;font-family:var(--mono);margin-bottom:6px;
+  }
+  .scale-readout .num{font-size:38px;font-weight:700;color:var(--text);}
+  .scale-readout .x{font-size:20px;color:var(--text-dim);}
+  .scale-readout .mode-tag{
+    margin-left:auto;font-size:11px;padding:4px 10px;border-radius:3px;letter-spacing:.05em;
+    border:1px solid var(--line);color:var(--text-dim);
+  }
+  .scale-readout .mode-tag.up{color:var(--amber);border-color:var(--amber-dim);background:rgba(255,138,30,.08);}
+  .scale-readout .mode-tag.down{color:var(--blue);border-color:var(--blue-dim);background:rgba(91,141,239,.08);}
+
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+    background:linear-gradient(to right, var(--blue-dim) 0%, var(--blue-dim) 20%, var(--line) 20%, var(--line) 21%, var(--amber-dim) 21%, var(--amber-dim) 100%);
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--text);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--line);cursor:grab;
+  }
+  input[type=range]::-webkit-slider-thumb:active{cursor:grabbing;background:var(--amber);}
+  .scale-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;}
+
+  /* model select */
+  select.model-select{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    padding:12px 14px;font-family:var(--sans);font-size:14px;border-radius:4px;cursor:pointer;
+    appearance:none;
+  }
+  .model-desc{font-size:12.5px;color:var(--text-dim);margin-top:8px;min-height:32px;}
+  .model-row{position:relative;}
+  .model-row::after{
+    content:'▾';position:absolute;right:14px;top:13px;color:var(--text-dim);pointer-events:none;font-size:12px;
+  }
+
+  .run-btn{
+    margin-top:4px;padding:15px 0;border:none;border-radius:4px;
+    background:var(--amber);color:#15171A;font-family:var(--mono);font-weight:700;font-size:14px;
+    letter-spacing:.06em;cursor:pointer;transition:filter .15s, transform .1s;
+  }
+  .run-btn:hover{filter:brightness(1.08);}
+  .run-btn:active{transform:scale(.98);}
+  .run-btn:disabled{background:var(--line);color:var(--text-dim);cursor:not-allowed;}
+
+  .status-line{
+    font-family:var(--mono);font-size:12px;color:var(--text-dim);min-height:18px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .status-line .spin{
+    width:10px;height:10px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--amber);
+    animation:spin .7s linear infinite;display:none;
+  }
+  .status-line.busy .spin{display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .result-stats{
+    border-top:1px solid var(--line);padding-top:16px;margin-top:auto;
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);
+  }
+  .result-stats div span{display:block;color:var(--text);font-size:14px;margin-top:2px;}
+
+  .download-link{
+    display:none;text-align:center;padding:12px 0;border:1px solid var(--phosphor);color:var(--phosphor);
+    border-radius:4px;font-family:var(--mono);font-size:13px;text-decoration:none;letter-spacing:.04em;
+    transition:background .15s;
+  }
+  .download-link:hover{background:rgba(74,222,128,.08);}
+  .download-link.show{display:block;}
+
+  .error-box{
+    display:none;background:rgba(255,80,80,.08);border:1px solid #5c2b2b;color:#ff8a8a;
+    font-family:var(--mono);font-size:12px;padding:10px 12px;border-radius:4px;
+  }
+  .error-box.show{display:block;}
+
+  /* ---------- ABOUT / FOOTER ---------- */
+  .about{
+    max-width:1180px;margin:0 auto 90px;padding:0 40px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  }
+  @media (max-width:880px){.about{grid-template-columns:1fr;}}
+  .about h3{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--amber);margin-bottom:12px;text-transform:uppercase;}
+  .about p{color:var(--text-dim);font-size:14px;}
+  .about .step{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+
+  footer{
+    border-top:1px solid var(--line);padding:24px 40px;display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);max-width:1180px;margin:0 auto;
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>RESOLV<small>RESOLUTION LAB</small></div>
+  <nav>
+    <a href="#lab">Alat</a>
+    <a href="#about">Tentang</a>
+  </nav>
+</div>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow">PEMROSESAN CITRA DIGITAL · GRAFIKA KOMPUTER</div>
+    <h1>Atur ulang resolusi gambar, <em>dari 0.25× sampai 4×</em>, tanpa kehilangan detail.</h1>
+    <p class="sub">Geser satu slider untuk memperbesar lewat model neural Real-ESRGAN, atau memperkecil lewat interpolasi presisi. Satu alat, dua arah.</p>
+  </div>
+  <div class="hero-meta">
+    <div class="row"><span>Mode upscale</span><span>Real-ESRGAN (ncnn-vulkan)</span></div>
+    <div class="row"><span>Mode downscale</span><span>Lanczos / Area interpolation</span></div>
+    <div class="row"><span>Rentang skala</span><span>0.25× — 4.00×</span></div>
+    <div class="row"><span>Berjalan di</span><span>Lokal, tanpa server eksternal</span></div>
+  </div>
+</section>
+
+<section class="lab" id="lab">
+  <div class="lab-frame">
+
+    <!-- VIEWPORT -->
+    <div class="viewport">
+      <div class="viewport-bar">
+        <span>VIEWPORT</span>
+        <span class="led" id="led"><span class="b"></span> STANDBY</span>
+      </div>
+      <div class="drop-zone" id="dropZone">
+        <span class="compare-tag" id="compareTag" style="display:none;"></span>
+        <div class="placeholder" id="placeholder">
+          <span class="icon">⬚</span>
+          <strong>Letakkan gambar di sini</strong>
+          atau klik untuk memilih file<br>PNG · JPG · WEBP · BMP, maks 25MB<br>
+          <span style="opacity:.7;">Sisi terpanjang di atas 2048px akan diturunkan otomatis sebelum diproses</span>
+        </div>
+        <img id="previewImg" style="display:none;">
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp,.bmp">
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+
+      <div class="ctrl-group">
+        <label>Skala Target</label>
+        <div class="scale-readout">
+          <span class="num" id="scaleNum">1.00</span>
+          <span class="x">×</span>
+          <span class="mode-tag" id="modeTag">DIAM</span>
+        </div>
+        <input type="range" id="scaleSlider" min="0.25" max="4" step="0.25" value="1">
+        <div class="scale-ticks">
+          <span>0.25×</span><span>1×</span><span>2×</span><span>3×</span><span>4×</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <label>Model Upscale</label>
+        <div class="model-row">
+          <select class="model-select" id="modelSelect">
+            {% for key, m in models.items() %}
+            <option value="{{ key }}" data-desc="{{ m.desc }}">{{ m.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="model-desc" id="modelDesc"></div>
+      </div>
+
+      <button class="run-btn" id="runBtn" disabled>JALANKAN PROSES</button>
+      <div class="status-line" id="statusLine"><span class="spin"></span><span id="statusText">Menunggu gambar diunggah.</span></div>
+      <div class="error-box" id="errorBox"></div>
+      <div class="error-box" id="warningBox" style="border-color:var(--amber-dim);background:rgba(255,138,30,.08);color:var(--amber);"></div>
+
+      <a class="download-link" id="downloadLink" download>↓ UNDUH HASIL</a>
+
+      <div class="result-stats" id="resultStats" style="display:none;">
+        <div>DIMENSI ASLI<span id="dimIn">—</span></div>
+        <div>DIMENSI HASIL<span id="dimOut">—</span></div>
+        <div>MODE<span id="modeOut">—</span></div>
+        <div>WAKTU PROSES<span id="timeOut">—</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div>
+    <h3>Upscale</h3>
+    <div class="step">SKALA &gt; 1.00×</div>
+    <p>Gambar dirender pada resolusi native 4× memakai Real-ESRGAN (ncnn-vulkan), lalu disesuaikan ke skala target yang diminta. Detail direkonstruksi oleh model, bukan sekadar diperbesar.</p>
+  </div>
+  <div>
+    <h3>Downscale</h3>
+    <div class="step">SKALA &lt; 1.00×</div>
+    <p>Gambar diperkecil langsung dari berkas asli memakai interpolasi Area/Lanczos — cepat, ringan, dan tidak memerlukan model neural sama sekali.</p>
+  </div>
+  <div>
+    <h3>Diam</h3>
+    <div class="step">SKALA = 1.00×</div>
+    <p>Tidak ada pemrosesan yang dijalankan. Berkas asli dikembalikan tanpa perubahan, sebagai titik referensi netral di tengah slider.</p>
+  </div>
+</section>
+
+<footer>
+  <span>RESOLV — dibangun untuk UAS Grafika Komputer</span>
+  <span>Berjalan 100% lokal di mesin Anda</span>
+</footer>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const placeholder = document.getElementById('placeholder');
+const previewImg = document.getElementById('previewImg');
+const compareTag = document.getElementById('compareTag');
+const led = document.getElementById('led');
+
+const scaleSlider = document.getElementById('scaleSlider');
+const scaleNum = document.getElementById('scaleNum');
+const modeTag = document.getElementById('modeTag');
+
+const modelSelect = document.getElementById('modelSelect');
+const modelDesc = document.getElementById('modelDesc');
+
+const runBtn = document.getElementById('runBtn');
+const statusLine = document.getElementById('statusLine');
+const statusText = document.getElementById('statusText');
+const errorBox = document.getElementById('errorBox');
+const warningBox = document.getElementById('warningBox');
+const downloadLink = document.getElementById('downloadLink');
+const resultStats = document.getElementById('resultStats');
+const dimIn = document.getElementById('dimIn');
+const dimOut = document.getElementById('dimOut');
+const modeOut = document.getElementById('modeOut');
+const timeOut = document.getElementById('timeOut');
+
+let currentFile = null;
+const MAX_DIMENSION = 2048; // Batas maksimum lebar/tinggi
+
+function updateModelDesc(){
+  const opt = modelSelect.options[modelSelect.selectedIndex];
+  modelDesc.textContent = opt.dataset.desc || '';
+}
+modelSelect.addEventListener('change', updateModelDesc);
+updateModelDesc();
+
+function updateScaleUI(){
+  const val = parseFloat(scaleSlider.value);
+  scaleNum.textContent = val.toFixed(2);
+  modeTag.classList.remove('up','down');
+  if (val > 1) { modeTag.textContent = 'UPSCALE'; modeTag.classList.add('up'); modelSelect.closest('.ctrl-group').style.opacity = 1; }
+  else if (val < 1) { modeTag.textContent = 'DOWNSCALE'; modeTag.classList.add('down'); modelSelect.closest('.ctrl-group').style.opacity = .45; }
+  else { modeTag.textContent = 'DIAM'; modelSelect.closest('.ctrl-group').style.opacity = .45; }
+}
+scaleSlider.addEventListener('input', updateScaleUI);
+updateScaleUI();
+
+function setLed(state){
+  const ledText = state === 'active' ? 'SIAP' : 'STANDBY';
+  led.innerHTML = `<span class="b"></span> ${ledText}`;
+  if (state === 'active') {
+    led.classList.add('active');
+  } else {
+    led.classList.remove('active');
+  }
+}
+
+function checkImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.width > MAX_DIMENSION || img.height > MAX_DIMENSION) {
+        reject(new Error(
+          `Dimensi gambar terlalu besar (${img.width}×${img.height}px). ` +
+          `Maksimum yang diizinkan adalah ${MAX_DIMENSION}×${MAX_DIMENSION}px. ` +
+          `Silakan resize gambar terlebih dahulu.`
+        ));
+      } else {
+        resolve({ width: img.width, height: img.height });
+      }
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Gagal membaca file gambar. Pastikan format file valid.'));
+    };
+    
+    img.src = url;
+  });
+}
+
+async function handleFile(file){
+  if (!file) return;
+  
+  // Reset UI
+  errorBox.classList.remove('show');
+  warningBox.classList.remove('show');
+  resultStats.style.display = 'none';
+  downloadLink.classList.remove('show');
+  
+  try {
+    // Cek dimensi gambar
+    await checkImageDimensions(file);
+    
+    // Jika lolos, tampilkan preview
+    currentFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    compareTag.style.display = 'block';
+    compareTag.textContent = file.name;
+    runBtn.disabled = false;
+    setLed('active');
+    statusText.textContent = 'Gambar siap diproses.';
+    
+  } catch (err) {
+    // Tampilkan error jika dimensi terlalu besar
+    currentFile = null;
+    previewImg.style.display = 'none';
+    placeholder.style.display = 'block';
+    compareTag.style.display = 'none';
+    runBtn.disabled = true;
+    setLed('standby');
+    
+    errorBox.textContent = err.message;
+    errorBox.classList.add('show');
+    statusText.textContent = 'Gambar ditolak.';
+    
+    // Reset file input
+    fileInput.value = '';
+  }
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFile(e.target.files[0]);
+  }
+});
+
+['dragenter','dragover'].forEach(evt =>
+  dropZone.addEventListener(evt, (e) => { 
+    e.preventDefault(); 
+    dropZone.classList.add('drag'); 
+  })
+);
+
+['dragleave','drop'].forEach(evt =>
+  dropZone.addEventListener(evt, (e) => { 
+    e.preventDefault(); 
+    dropZone.classList.remove('drag'); 
+  })
+);
+
+dropZone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+runBtn.addEventListener('click', async () => {
+  if (!currentFile) return;
+  
+  errorBox.classList.remove('show');
+  warningBox.classList.remove('show');
+  statusLine.classList.add('busy');
+  statusText.textContent = 'Memproses gambar — mohon tunggu...';
+  runBtn.disabled = true;
+
+  const formData = new FormData();
+  formData.append('image', currentFile);
+  formData.append('scale', scaleSlider.value);
+  formData.append('model', modelSelect.value);
+
+  try {
+    const res = await fetch('/api/process', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || 'Terjadi kesalahan tak diketahui.');
+    }
+
+    previewImg.src = data.output_url + '?t=' + Date.now();
+    compareTag.textContent = 'Hasil — ' + data.mode.toUpperCase();
+
+    dimIn.textContent = data.input_dim.w + ' × ' + data.input_dim.h;
+    dimOut.textContent = data.output_dim.w + ' × ' + data.output_dim.h;
+    modeOut.textContent = data.mode.toUpperCase();
+    timeOut.textContent = data.elapsed + 's';
+    resultStats.style.display = 'grid';
+
+    downloadLink.href = data.output_url;
+    downloadLink.classList.add('show');
+
+    if (data.warning) {
+      warningBox.textContent = data.warning;
+      warningBox.classList.add('show');
+    }
+
+    statusText.textContent = 'Selesai.';
+  } catch (err) {
+    errorBox.textContent = 'GAGAL: ' + err.message;
+    errorBox.classList.add('show');
+    statusText.textContent = 'Proses dihentikan.';
+  } finally {
+    statusLine.classList.remove('busy');
+    runBtn.disabled = false;
+  }
+});
+
+// Update placeholder text
+document.addEventListener('DOMContentLoaded', () => {
+  const placeholderText = document.querySelector('#placeholder');
+  if (placeholderText) {
+    placeholderText.innerHTML = `
+      <span class="icon">⬚</span>
+      <strong>Letakkan gambar di sini</strong>
+      atau klik untuk memilih file<br>PNG · JPG · WEBP · BMP, maks 25MB<br>
+      <span style="opacity:.7;">Maksimal dimensi: ${MAX_DIMENSION}×${MAX_DIMENSION}px</span>
+    `;
+  }
+});
+</script>
+
+</body>
+</html>
